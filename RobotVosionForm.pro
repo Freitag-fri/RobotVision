@@ -26,13 +26,30 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+ \#        vision.cpp
+    vision.cpp
 
 HEADERS += \
         mainwindow.h
 
 FORMS += \
         mainwindow.ui
+
+QT += serialport
+
+ CONFIG += serialport
+
+INCLUDEPATH += D:\openCV\opencv\build\install\include
+
+LIBS += D:\openCV\opencv\build\bin\libopencv_core410d.dll
+LIBS += D:\openCV\opencv\build\bin\libopencv_highgui410d.dll
+LIBS += D:\openCV\opencv\build\bin\libopencv_imgcodecs410d.dll
+LIBS += D:\openCV\opencv\build\bin\libopencv_imgproc410d.dll
+LIBS += D:\openCV\opencv\build\bin\libopencv_calib3d410d.dll
+LIBS += D:\openCV\opencv\build\bin\libopencv_imgproc410d.dll
+LIBS += D:\openCV\opencv\build\bin\libopencv_video410d.dll
+LIBS += D:\openCV\opencv\build\bin\libopencv_videoio410d.dll
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
