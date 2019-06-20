@@ -16,7 +16,7 @@ using namespace std;
 
 //QSerialPort serial;
 
-void Move(int x, int left, int right, Mat in_frame);
+void Move(int x, int left, int right, Mat in_frame, int area);
 
 QSerialPort serial;
 void SetPort()
@@ -47,8 +47,6 @@ void Video()
         return;
     }
 
-
-
     namedWindow("win2");
     namedWindow("image");
     while (inVid.read(in_frame))
@@ -70,24 +68,28 @@ void Video()
         {
             serial.write("S");
         }
-        for( int i = 0; i < contours.size(); i++ )
+        for(unsigned int i = 0; i < contours.size(); i++ )
         {
             cv::approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 7, true );
             boundRect[i] = cv::boundingRect( cv::Mat(contours_poly[i]) );
 
-            double area1 = contourArea(contours[i]);
+            int area = contourArea(contours[i]);
 
-            if (area1 > 1500 && area1 <20000 && boundRect[i].height > boundRect[i].width)
+            if (area > 1700 && area <25000 && boundRect[i].height > boundRect[i].width)
             {
-                int x = boundRect[i].width/2 + boundRect[i].x;  //получаем координ центра по x
+                string s = to_string(area);
+                putText(in_frame, "Area " + s, Point(boundRect[i].x -25, boundRect[i].y -15),
+                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);                //вывод площади
+
+                int centre = boundRect[i].width/2 + boundRect[i].x;  //получаем координ центра по x
                 int y = boundRect[i].height/2 + boundRect[i].y; //получаем координ центра по y
-                Point center(x, y);                             //присваевоем координаты точке center
+                Point center(centre, y);                             //присваевоем координаты точке center
                 circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);      //выводим центер
                 rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 );
-                Move (x, left, right, in_frame);
+                Move (centre, left, right, in_frame, area);
             }
         }
-        in_frame = in_frame + tmp;
+        in_frame = in_frame + tmp;  //добавление квадратов к изображению
         imshow("image", in_frame);
         imshow("win2", in_frame2);
         if (waitKey (1000/30) >= 0)
@@ -97,41 +99,52 @@ void Video()
     }
 }
 
-void Move(int x, int left, int right, Mat in_frame)
+void Move(int centre, int left, int right, Mat in_frame, int area)
 {
-    if (x <= left && x >= left -20)
+    if (centre <= left && centre >= left -20)
     {
         line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255, 0, 0), 1);
         line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(0,0,255), 1);
         cout <<"slow left"<<endl;
         serial.write("l");
     }
-    else if (x >= right && x <= right + 20)
+
+    else if (centre >= right && centre <= right + 20)
     {
         line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(0, 0, 255), 1);
         line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
         cout <<"slow right"<<endl;
         serial.write("r");
     }
-    else if (x <= left - 20)
+
+    else if (centre <= left - 20)
     {
-     line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255, 0, 0), 1);
-     line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(0,0,255), 1);
-     cout <<"left"<<endl;
-     serial.write("L");
+        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255, 0, 0), 1);
+        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(0,0,255), 1);
+        cout <<"left"<<endl;
+        serial.write("L");
     }
-    else if (x >= right + 20)
+
+    else if (centre >= right + 20)
     {
-     line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(0, 0, 255), 1);
-     line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
-     cout <<"right"<<endl;
-     serial.write("R");
+        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(0, 0, 255), 1);
+        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
+        cout <<"right"<<endl;
+        serial.write("R");
+    }
+
+    else if(centre > left && centre <right && area < 12000)
+    {
+        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
+        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255,0,0), 1);
+        cout <<"go"<<endl;
+        serial.write("G");
     }
     else
     {
-     line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
-     line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255,0,0), 1);
-     cout <<"stop"<<endl;
-     serial.write("S");
+        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
+        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255,0,0), 1);
+        cout <<"stop"<<endl;
+        serial.write("S");
     }
 }
