@@ -9,10 +9,11 @@
 #include <D:\Qt\Examples\Qt-5.13.0\serialport\creaderasync\serialportreader.h>
 #include <D:\Qt\Examples\Qt-5.13.0\serialport\cwriterasync\serialportwriter.h>
 
-
+#include <cmath>
 
 using namespace cv;
 using namespace std;
+#define PI 3.14159265     // число ПИ
 
 //QSerialPort serial;
 
@@ -51,7 +52,7 @@ void Video()
     namedWindow("image");
     while (inVid.read(in_frame))
     {
-        inRange(in_frame, Scalar(30, 80, 0), Scalar(170, 255, 50), in_frame2);              //B,G,R достаём нужный цвет
+        inRange(in_frame, Scalar(30, 120, 50), Scalar(170, 255, 110), in_frame2);              //B,G,R достаём нужный цвет
         findContours( in_frame2, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));    //находит контур
 
         Mat tmp = Mat::zeros(in_frame2.size(), CV_8UC3 );                                   //копирование изображения
@@ -60,8 +61,8 @@ void Video()
 
         if (right <= 0 || left <= 0)
         {
-            right = in_frame.cols/2 + 50;
-            left = in_frame.cols/2 - 50;
+            right = in_frame.cols/2 + 65;
+            left = in_frame.cols/2 - 65;
         }
 
         if (contours.size() == 0)
@@ -75,18 +76,38 @@ void Video()
 
             int area = contourArea(contours[i]);
 
-            if (area > 1700 && area <25000 && boundRect[i].height > boundRect[i].width)
+            if (area > 1000 && area <25000 /*&& boundRect[i].height > boundRect[i].width*/)
             {
                 string s = to_string(area);
                 putText(in_frame, "Area " + s, Point(boundRect[i].x -25, boundRect[i].y -15),
                     FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);                //вывод площади
 
-                int centre = boundRect[i].width/2 + boundRect[i].x;  //получаем координ центра по x
-                int y = boundRect[i].height/2 + boundRect[i].y; //получаем координ центра по y
-                Point center(centre, y);                             //присваевоем координаты точке center
+                int centre = boundRect[i].width/2 + boundRect[i].x;     //получаем координ центра по x
+                int y = boundRect[i].height/2 + boundRect[i].y;         //получаем координ центра по y
+
+                int deltaY = in_frame.rows - y;
+                int deltaX = in_frame.cols/2 - centre;
+
+                double param = (double)deltaX/deltaY;
+                param = atan (param) * 180.0 / PI;
+
+                string deltX = to_string(deltaX);
+                putText(in_frame, "X " + deltX, Point(10, 40),
+                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);
+
+                string deltY = to_string(deltaY);
+                putText(in_frame, "Y " + deltY, Point(10, 80),
+                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);
+
+                string angle = to_string(param);
+                putText(in_frame, "угол " + angle, Point(10, 160),
+                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);
+
+
+                Point center(centre, y);                                //присваевоем координаты точке center
                 circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);      //выводим центер
                 rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 );
-                Move (centre, left, right, in_frame, area);
+                //Move (centre, left, right, in_frame, area);
             }
         }
         in_frame = in_frame + tmp;  //добавление квадратов к изображению
