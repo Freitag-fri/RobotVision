@@ -18,18 +18,20 @@ using namespace std;
 //QSerialPort serial;
 
 void Move(int x, int left, int right, Mat in_frame, int area);
+void Move2(int param);
 
 QSerialPort serial;
 void SetPort()
 {
 
-    serial.setPortName("com3");
+    serial.setPortName("com4");
     serial.setBaudRate(9600);
     serial.setDataBits(QSerialPort::Data8);
     serial.setParity(QSerialPort::NoParity);
     serial.setStopBits(QSerialPort::OneStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
     serial.open(QIODevice::ReadWrite);
+
 }
 
 void Video()
@@ -76,7 +78,7 @@ void Video()
 
             int area = contourArea(contours[i]);
 
-            if (area > 1000 && area <25000 /*&& boundRect[i].height > boundRect[i].width*/)
+            if (area > 500 && area <25000 /*&& boundRect[i].height > boundRect[i].width*/)
             {
                 string s = to_string(area);
                 putText(in_frame, "Area " + s, Point(boundRect[i].x -25, boundRect[i].y -15),
@@ -100,7 +102,7 @@ void Video()
                     FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);
 
                 string angle = to_string(param);
-                putText(in_frame, "угол " + angle, Point(10, 160),
+                putText(in_frame, "angle " + angle, Point(10, 160),
                     FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);
 
 
@@ -108,6 +110,7 @@ void Video()
                 circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);      //выводим центер
                 rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 );
                 //Move (centre, left, right, in_frame, area);
+                Move2(param);
             }
         }
         in_frame = in_frame + tmp;  //добавление квадратов к изображению
@@ -118,6 +121,15 @@ void Video()
             break;
         }
     }
+}
+
+void Move2(int param)
+{
+
+    QByteArray buffer = QByteArray::number(param);
+    buffer += "\n";
+    serial.write(buffer);
+    cout << param <<endl;
 }
 
 void Move(int centre, int left, int right, Mat in_frame, int area)
