@@ -54,7 +54,7 @@ void Video()
     namedWindow("image");
     while (inVid.read(in_frame))
     {
-        inRange(in_frame, Scalar(30, 120, 50), Scalar(170, 255, 110), in_frame2);              //B,G,R достаём нужный цвет
+        inRange(in_frame, Scalar(30, 80, 0), Scalar(130, 255, 70), in_frame2);              //B,G,R достаём нужный цвет
         findContours( in_frame2, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));    //находит контур
 
         Mat tmp = Mat::zeros(in_frame2.size(), CV_8UC3 );                                   //копирование изображения
@@ -71,15 +71,18 @@ void Video()
         {
             serial.write("S");
         }
+        bool presenceContours = false;
         for(unsigned int i = 0; i < contours.size(); i++ )
         {
+
             cv::approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 7, true );
             boundRect[i] = cv::boundingRect( cv::Mat(contours_poly[i]) );
 
             int area = contourArea(contours[i]);
 
-            if (area > 500 && area <25000 /*&& boundRect[i].height > boundRect[i].width*/)
+            if (area > 1000 && area <25000 /*&& boundRect[i].height > boundRect[i].width*/)
             {
+                presenceContours = true;
                 string s = to_string(area);
                 putText(in_frame, "Area " + s, Point(boundRect[i].x -25, boundRect[i].y -15),
                     FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);                //вывод площади
@@ -91,27 +94,41 @@ void Video()
                 int deltaX = in_frame.cols/2 - centre;
 
                 double param = (double)deltaX/deltaY;
-                param = atan (param) * 180.0 / PI;
+                param = atan (param) * 180.0 / PI;              //находим угол поворота
+
+                int hypotenuse = (deltaX*deltaX)+ (deltaY*deltaY);
+                hypotenuse = sqrt(hypotenuse);
 
                 string deltX = to_string(deltaX);
                 putText(in_frame, "X " + deltX, Point(10, 40),
-                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);
+                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
 
                 string deltY = to_string(deltaY);
                 putText(in_frame, "Y " + deltY, Point(10, 80),
-                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);
+                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
+
+                string hypot = to_string(hypotenuse);
+                putText(in_frame, "hypotenuse = " + hypot, Point(10, 120),
+                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
 
                 string angle = to_string(param);
-                putText(in_frame, "angle " + angle, Point(10, 160),
-                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);
+                putText(in_frame, "angle " + angle, Point(10, 200),
+                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
 
 
                 Point center(centre, y);                                //присваевоем координаты точке center
                 circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);      //выводим центер
                 rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 );
                 //Move (centre, left, right, in_frame, area);
-                Move2(param);
+
+                hypotenuse = hypotenuse/2;
+                if (hypotenuse < 90)
+                    Move2(hypotenuse);
+                else { Move2 (0);}
+               // Move2(param);
             }
+//            if (presenceContours == false)
+//                Move2 (0);
         }
         in_frame = in_frame + tmp;  //добавление квадратов к изображению
         imshow("image", in_frame);
