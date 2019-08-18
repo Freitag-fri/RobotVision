@@ -6,8 +6,8 @@
 #include <D:/openCV/opencv/build/install/include/opencv2/videoio.hpp>
 
 #include <QtSerialPort/QSerialPortInfo>
-#include <D:\Qt\Examples\Qt-5.13.0\serialport\creaderasync\serialportreader.h>
-#include <D:\Qt\Examples\Qt-5.13.0\serialport\cwriterasync\serialportwriter.h>
+#include <D:\Qt\Examples\Qt-5.12.2\serialport\creaderasync\serialportreader.h>
+//#include <D:\Qt\Examples\Qt-5.12.0\serialport\cwriterasync\serialportwriter.h>
 
 #include <cmath>
 
@@ -18,7 +18,8 @@ using namespace std;
 //QSerialPort serial;
 
 void Move(int x, int left, int right, Mat in_frame, int area);
-void Move2(int param);
+void Move2(int param, int angle);
+void Move2(int angle);
 
 QSerialPort serial;
 void SetPort()
@@ -54,6 +55,7 @@ void Video()
     namedWindow("image");
     while (inVid.read(in_frame))
     {
+        cv::rotate(in_frame,in_frame, cv::ROTATE_180);
         inRange(in_frame, Scalar(30, 80, 0), Scalar(130, 255, 70), in_frame2);              //B,G,R достаём нужный цвет
         findContours( in_frame2, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));    //находит контур
 
@@ -91,10 +93,10 @@ void Video()
                 int y = boundRect[i].height/2 + boundRect[i].y;         //получаем координ центра по y
 
                 int deltaY = in_frame.rows - y;
-                int deltaX = in_frame.cols/2 - centre;
+                int deltaX = in_frame.cols/2 - centre +23;
 
-                double param = (double)deltaX/deltaY;
-                param = atan (param) * 180.0 / PI;              //находим угол поворота
+                double angle = (double)deltaX/deltaY;
+                angle = atan (angle) * 180.0 / PI;              //находим угол поворота
 
                 int hypotenuse = (deltaX*deltaX)+ (deltaY*deltaY);
                 hypotenuse = sqrt(hypotenuse);
@@ -111,8 +113,8 @@ void Video()
                 putText(in_frame, "hypotenuse = " + hypot, Point(10, 120),
                     FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
 
-                string angle = to_string(param);
-                putText(in_frame, "angle " + angle, Point(10, 200),
+                string angleStr = to_string(angle);
+                putText(in_frame, "angle " + angleStr, Point(10, 200),
                     FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
 
 
@@ -121,14 +123,17 @@ void Video()
                 rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 );
                 //Move (centre, left, right, in_frame, area);
 
-                hypotenuse = hypotenuse/2;
-                if (hypotenuse < 90)
-                    Move2(hypotenuse);
-                else { Move2 (0);}
+                if (hypotenuse < 500 && hypotenuse > 370)
+                {
+                    hypotenuse -=370;
+                    hypotenuse *= 0.6;
+                        //Move2(angle);
+                        Move2(hypotenuse,angle);
+                }
+
+               // else { Move2 (0);}
                // Move2(param);
             }
-//            if (presenceContours == false)
-//                Move2 (0);
         }
         in_frame = in_frame + tmp;  //добавление квадратов к изображению
         imshow("image", in_frame);
@@ -140,13 +145,26 @@ void Video()
     }
 }
 
-void Move2(int param)
+
+void Move2(int angle)
 {
 
-    QByteArray buffer = QByteArray::number(param);
-    buffer += "\n";
-    serial.write(buffer);
-    cout << param <<endl;
+    QByteArray hypBuffer = QByteArray::number(angle);
+    hypBuffer += "\n";
+    serial.write(hypBuffer);
+    cout << angle <<endl;
+}
+
+void Move2(int hypotenuse, int angle)
+{
+
+    QByteArray hypBuffer = QByteArray::number(hypotenuse);
+    QByteArray angleBuffer = QByteArray::number(angle);
+    hypBuffer += "q";
+    hypBuffer += angleBuffer;
+    hypBuffer += "\n";
+    serial.write(hypBuffer);
+    cout << hypotenuse <<endl;
 }
 
 void Move(int centre, int left, int right, Mat in_frame, int area)
