@@ -74,6 +74,9 @@ void Video()
             serial.write("S");
         }
         bool presenceContours = false;
+
+
+
         for(unsigned int i = 0; i < contours.size(); i++ )
         {
 
@@ -92,11 +95,14 @@ void Video()
                 int centre = boundRect[i].width/2 + boundRect[i].x;     //получаем координ центра по x
                 int y = boundRect[i].height/2 + boundRect[i].y;         //получаем координ центра по y
 
-                int deltaY = in_frame.rows - y;
-                int deltaX = in_frame.cols/2 - centre +23;
+                //int deltaY = in_frame.rows - y - 120;
+                int deltaX = in_frame.cols/2 - centre -70 ;
+                int deltaY = in_frame.rows - y -120 + 200;
 
                 double angle = (double)deltaX/deltaY;
-                angle = atan (angle) * 180.0 / PI;              //находим угол поворота
+                angle = atan(angle) * 180.0 / PI;              //находим угол поворота
+
+                deltaY -= 200;
 
                 int hypotenuse = (deltaX*deltaX)+ (deltaY*deltaY);
                 hypotenuse = sqrt(hypotenuse);
@@ -123,12 +129,13 @@ void Video()
                 rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 );
                 //Move (centre, left, right, in_frame, area);
 
-                if (hypotenuse < 500 && hypotenuse > 370)
+                if (/*hypotenuse > 15 && hypotenuse < 180 &&*/ deltaY > 15 && deltaY < 180)
                 {
-                    hypotenuse -=370;
-                    hypotenuse *= 0.6;
+                   // hypotenuse -=370;
+                    //hypotenuse *= 0.6;
                         //Move2(angle);
-                        Move2(hypotenuse,angle);
+                   // angle *= 0.32;
+                        Move2(deltaY,angle);
                 }
 
                // else { Move2 (0);}
