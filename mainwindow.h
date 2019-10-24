@@ -16,6 +16,8 @@ public:
     ~MainWindow();
 
 private slots:
+    void PrintValues(const double area, const int Y, const int X, const double angle);
+    void Video();
     void on_pushButton_clicked();
 
 private:

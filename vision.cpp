@@ -9,6 +9,9 @@
 #include <D:\Qt\Examples\Qt-5.12.2\serialport\creaderasync\serialportreader.h>
 //#include <D:\Qt\Examples\Qt-5.12.0\serialport\cwriterasync\serialportwriter.h>
 
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+
 #include <cmath>
 
 using namespace cv;
@@ -35,7 +38,7 @@ void SetPort()
 
 }
 
-void Video()
+void MainWindow::Video()
 {
     vector<vector<Point>> contours;        //переменные для определение квадрата
 
@@ -56,12 +59,12 @@ void Video()
     while (inVid.read(in_frame))
     {
         cv::rotate(in_frame,in_frame, cv::ROTATE_180);
-        inRange(in_frame, Scalar(30, 80, 0), Scalar(130, 255, 70), in_frame2);              //B,G,R достаём нужный цвет
+        inRange(in_frame, Scalar(25, 30, 0), Scalar(80, 255, 55), in_frame2);              //B,G,R достаём нужный цвет
         findContours( in_frame2, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));    //находит контур
 
         Mat tmp = Mat::zeros(in_frame2.size(), CV_8UC3 );                                   //копирование изображения
         std::vector<std::vector<cv::Point> > contours_poly( contours.size() );
-        std::vector<cv::Rect> boundRect( contours.size() );
+        std::vector<cv::Rect> boundRect(contours.size() );
 
         if (right <= 0 || left <= 0)
         {
@@ -69,77 +72,51 @@ void Video()
             left = in_frame.cols/2 - 65;
         }
 
-        if (contours.size() == 0)
-        {
-            serial.write("S");
-        }
-        bool presenceContours = false;
-
-
-
+        vector<vector<Point>> contoursNew;
         for(unsigned int i = 0; i < contours.size(); i++ )
         {
+            int area = contourArea(contours[i]);
+            if (area > 1200 && area <2500)
+            {
+                contoursNew.push_back(contours[i]);               //заполняем вектор подходящими контурами
+            }
+            ui->size->setText(QString::number(contoursNew.size()));
+        }
 
-            cv::approxPolyDP( cv::Mat(contours[i]), contours_poly[i], 7, true );
+        if(!contoursNew.size())
+        {Move2(0,0);}
+
+        for(unsigned int i = 0; i < contoursNew.size(); i++ )
+        {
+            cv::approxPolyDP( cv::Mat(contoursNew[i]), contours_poly[i], 7, true );
             boundRect[i] = cv::boundingRect( cv::Mat(contours_poly[i]) );
 
-            int area = contourArea(contours[i]);
+            int centre = boundRect[i].width/2 + boundRect[i].x;     //получаем координ центра по x
+            int y = boundRect[i].height/2 + boundRect[i].y;         //получаем координ центра по y
 
-            if (area > 1000 && area <25000 /*&& boundRect[i].height > boundRect[i].width*/)
+            //int deltaY = in_frame.rows - y - 120;
+            int deltaX = in_frame.cols/2 - centre -113 ;
+            int deltaY = in_frame.rows - y -145;
+
+            double angle = (double)deltaX/(deltaY + 200);   // ... + коррекция длины
+            angle = atan(angle) * 180.0 / PI;              //находим угол поворота
+
+            int hypotenuse = (deltaX*deltaX)+ (deltaY*deltaY);          //зачем???
+            hypotenuse = sqrt(hypotenuse);
+
+            PrintValues(contourArea(contoursNew[i]), deltaX, deltaY, angle);       //вывод значений на форму
+
+
+            Point center(centre, y);                                //присваевоем координаты точке center
+            circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);      //выводим центер
+            rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 );
+
+            if (deltaY > 15 && deltaY < 180)
             {
-                presenceContours = true;
-                string s = to_string(area);
-                putText(in_frame, "Area " + s, Point(boundRect[i].x -25, boundRect[i].y -15),
-                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(185,32,233), 1);                //вывод площади
-
-                int centre = boundRect[i].width/2 + boundRect[i].x;     //получаем координ центра по x
-                int y = boundRect[i].height/2 + boundRect[i].y;         //получаем координ центра по y
-
-                //int deltaY = in_frame.rows - y - 120;
-                int deltaX = in_frame.cols/2 - centre -70 ;
-                int deltaY = in_frame.rows - y -120 + 200;
-
-                double angle = (double)deltaX/deltaY;
-                angle = atan(angle) * 180.0 / PI;              //находим угол поворота
-
-                deltaY -= 200;
-
-                int hypotenuse = (deltaX*deltaX)+ (deltaY*deltaY);
-                hypotenuse = sqrt(hypotenuse);
-
-                string deltX = to_string(deltaX);
-                putText(in_frame, "X " + deltX, Point(10, 40),
-                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
-
-                string deltY = to_string(deltaY);
-                putText(in_frame, "Y " + deltY, Point(10, 80),
-                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
-
-                string hypot = to_string(hypotenuse);
-                putText(in_frame, "hypotenuse = " + hypot, Point(10, 120),
-                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
-
-                string angleStr = to_string(angle);
-                putText(in_frame, "angle " + angleStr, Point(10, 200),
-                    FONT_HERSHEY_COMPLEX_SMALL, 1.2, Scalar(0,0,255), 1);
-
-
-                Point center(centre, y);                                //присваевоем координаты точке center
-                circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);      //выводим центер
-                rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 );
-                //Move (centre, left, right, in_frame, area);
-
-                if (/*hypotenuse > 15 && hypotenuse < 180 &&*/ deltaY > 15 && deltaY < 180)
+                if(ui->startWork->isChecked())
                 {
-                   // hypotenuse -=370;
-                    //hypotenuse *= 0.6;
-                        //Move2(angle);
-                   // angle *= 0.32;
-                        Move2(deltaY,angle);
+                    Move2(deltaY,angle);
                 }
-
-               // else { Move2 (0);}
-               // Move2(param);
             }
         }
         in_frame = in_frame + tmp;  //добавление квадратов к изображению
@@ -147,11 +124,19 @@ void Video()
         imshow("win2", in_frame2);
         if (waitKey (1000/30) >= 0)
         {
+
             break;
         }
     }
 }
 
+void MainWindow::PrintValues(const double area, const int Y, const int X, const double angle)
+{
+    ui->PrintArea->setText(QString::number(area));
+    ui->PrintX->setText(QString::number(Y));
+    ui->PrintY->setText(QString::number(X));
+    ui->PrintAngle->setText(QString::number(angle));
+}
 
 void Move2(int angle)
 {
