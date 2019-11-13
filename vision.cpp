@@ -18,16 +18,12 @@ using namespace cv;
 using namespace std;
 #define PI 3.14159265     // число ПИ
 
-//QSerialPort serial;
-
-void Move(int x, int left, int right, Mat in_frame, int area);
 void Move2(int param, int angle);
 void Move2(int angle);
 
-QSerialPort serial;
+static QSerialPort serial;
 void SetPort()
-{
-
+{    
     serial.setPortName("com4");
     serial.setBaudRate(9600);
     serial.setDataBits(QSerialPort::Data8);
@@ -149,62 +145,12 @@ void Move2(int angle)
 
 void Move2(int hypotenuse, int angle)
 {
+    char messenger[13];
 
     QByteArray hypBuffer = QByteArray::number(hypotenuse);
-    QByteArray angleBuffer = QByteArray::number(angle);
-    hypBuffer += "q";
-    hypBuffer += angleBuffer;
-    hypBuffer += "\n";
-    serial.write(hypBuffer);
-    cout << hypotenuse <<endl;
-}
+    sprintf(messenger, "a%03db%03dc%03d", angle, hypotenuse, hypotenuse +angle);   //кодировка координат a030b102c132
 
-void Move(int centre, int left, int right, Mat in_frame, int area)
-{
-    if (centre <= left && centre >= left -20)
-    {
-        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255, 0, 0), 1);
-        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(0,0,255), 1);
-        cout <<"slow left"<<endl;
-        serial.write("l");
-    }
+    serial.write(messenger);
+    cout << messenger <<endl;
 
-    else if (centre >= right && centre <= right + 20)
-    {
-        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(0, 0, 255), 1);
-        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
-        cout <<"slow right"<<endl;
-        serial.write("r");
-    }
-
-    else if (centre <= left - 20)
-    {
-        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255, 0, 0), 1);
-        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(0,0,255), 1);
-        cout <<"left"<<endl;
-        serial.write("L");
-    }
-
-    else if (centre >= right + 20)
-    {
-        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(0, 0, 255), 1);
-        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
-        cout <<"right"<<endl;
-        serial.write("R");
-    }
-
-    else if(centre > left && centre <right && area < 12000)
-    {
-        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
-        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255,0,0), 1);
-        cout <<"go"<<endl;
-        serial.write("G");
-    }
-    else
-    {
-        line(in_frame, Point(right, 0), Point(right, in_frame.rows), cv::Scalar(255,0,0), 1);
-        line(in_frame, Point(left, 0), Point(left, in_frame.rows), cv::Scalar(255,0,0), 1);
-        cout <<"stop"<<endl;
-        serial.write("S");
-    }
 }
