@@ -18,6 +18,8 @@ public:
 private slots:
     void PrintValues(const double area, const int Y, const int X, const double angle);
     void Video();
+    void CalibCamera();             //калибровка камеры
+    void CalibCamera2();             //калибровка камеры
     void on_pushButton_clicked();
 
 private:
