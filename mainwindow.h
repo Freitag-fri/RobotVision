@@ -2,6 +2,18 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <iostream>
+#include <cmath>
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
+#include "opencv2/imgproc.hpp"
+#include <opencv2/video.hpp>
+#include <opencv2/videoio.hpp>
+
+#include <QtSerialPort/QSerialPortInfo>
+#include <D:\Qt\Examples\Qt-5.12.2\serialport\creaderasync\serialportreader.h>
+//#include <D:\Qt\Examples\Qt-5.12.0\serialport\cwriterasync\serialportwriter.h>
 
 namespace Ui {
 class MainWindow;
@@ -24,6 +36,9 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+
+    cv::Mat map1;     //коэф для калибровки каммеры
+    cv::Mat map2;   //коэф для калибровки каммеры
 };
 
 #endif // MAINWINDOW_H

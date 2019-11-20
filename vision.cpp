@@ -1,18 +1,5 @@
-#include <iostream>
-#include <D:/openCV/opencv/build/install/include/opencv2/opencv.hpp>
-#include <D:/openCV/opencv/build/install/include/opencv2/highgui.hpp>
-#include "D:/openCV/opencv/build/install/include/opencv2/imgproc.hpp"
-#include <D:/openCV/opencv/build/install/include/opencv2/video.hpp>
-#include <D:/openCV/opencv/build/install/include/opencv2/videoio.hpp>
-
-#include <QtSerialPort/QSerialPortInfo>
-#include <D:\Qt\Examples\Qt-5.12.2\serialport\creaderasync\serialportreader.h>
-//#include <D:\Qt\Examples\Qt-5.12.0\serialport\cwriterasync\serialportwriter.h>
-
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
-#include <cmath>
 
 using namespace cv;
 using namespace std;
@@ -31,7 +18,6 @@ void SetPort()
     serial.setStopBits(QSerialPort::OneStop);
     serial.setFlowControl(QSerialPort::NoFlowControl);
     serial.open(QIODevice::ReadWrite);
-
 }
 
 void MainWindow::Video()
@@ -132,9 +118,11 @@ void MainWindow::Video()
         */
 
 
-
+        Mat image2;
+        remap(in_frame, image2, map1, map2, cv::INTER_CUBIC);
 
         imshow("image", in_frame);
+        imshow("New", image2);
         // imshow("win2", in_frame2);
         if (waitKey (1000/30) >= 0)
         {
@@ -160,33 +148,18 @@ void MainWindow::CalibCamera2()
         imshow("image", image);
         waitKey();
     }
-
 }
 
 void MainWindow::CalibCamera()
 {
-    VideoCapture captR(0); // open the video camera no. 0 (RIGHT)
-
-
-
-    if (!captR.isOpened())  // if not success, exit program
-    {
-        cout << "Cannot open the video cam 0" << endl;
-        return;
-    }
-
-    namedWindow("MyVideo (RIGHT)", WINDOW_AUTOSIZE); //create a window called "MyVideo"
-    namedWindow("Grayscale", WINDOW_AUTOSIZE); //create a window called "Grayscale"
-    int a = 0;  // Frame counter
+    namedWindow("Test", WINDOW_AUTOSIZE); //create a window called "MyVideo"
 
     int numCornersHor = 9; // Chessboard dimensions
     int numCornersVer = 6;
-    int numSquares = numCornersHor * numCornersVer;
     Size boardSize = Size(numCornersHor, numCornersVer);
 
-    Mat frameR;
-    //      Mat frameL;
-    Mat gray_frame;
+    Mat image;
+    Mat gray_image;
 
     vector<Point3f> obj;
     vector<Point2f> corners;  // output vectors of image points
@@ -202,150 +175,61 @@ void MainWindow::CalibCamera()
         }
     }
 
-    while (captR.read(frameR))
+    for (int i = 0; i < 30; i++)
     {
-        int key = waitKey(30);
+        string path = "D:\\qtProgram\\build-Calib_Camera_New-Desktop_Qt_5_12_2_MinGW_32_bit-Debug\\Camera_calib_";
+        path += to_string(i);
+        path += ".jpg";
+        image = imread(path);
+        imshow("Test", image);
         // make grayscale frame version for conerSubPix
-        cvtColor(frameR, gray_frame, COLOR_BGR2GRAY);
+        cvtColor(image, gray_image, COLOR_BGR2GRAY);
 
         // Get the chessboard corners
-        bool found = findChessboardCorners(frameR, boardSize, corners);
+        bool found = findChessboardCorners(image, boardSize, corners);
 
         if (found)
         {
             // Increase accuracy by subpixels
-            cornerSubPix(gray_frame, corners, Size(11, 11), Size(-1, -1), TermCriteria(TermCriteria::MAX_ITER + cv::TermCriteria::EPS, 30, 0.1));
-            drawChessboardCorners(gray_frame, boardSize, corners, found);
-            imshow("Grayscale", gray_frame);
+            cornerSubPix(gray_image, corners, Size(11, 11), Size(-1, -1), TermCriteria(TermCriteria::MAX_ITER + cv::TermCriteria::EPS, 30, 0.1));
+            drawChessboardCorners(gray_image, boardSize, corners, found);
+            imshow("Grayscale", gray_image);
 
-            ////////////////////////////////////////////
-            if(key==32 ) // Save good found by pressing [space]
-            {
-                cout << "Captured good calibration image, No " << a << endl;
-                image_points.push_back(corners);
-                object_points.push_back(obj);
-                cout << "Captured good calibration image, No " << a << endl;
-                a++;
-            }
-        }
+            image_points.push_back(corners);
+            object_points.push_back(obj);
 
-        imshow("MyVideo (RIGHT)", frameR); //show right webcam frame in "MyVideo" window
-
-
-        if (key == 115){ // If 'S' key pressed begin calibration
-
-            //////////// BEGIN CALIBRATION ////////////////////////
-            cout << "Callibration started..." << endl;
-
-            Mat cameraMatrix = Mat(3, 3, CV_64F);
-            cameraMatrix.at<double>(0,0) = 1.0;
-
-            Mat distCoeffs;
-            distCoeffs = Mat::zeros(8, 1, CV_64F);
-
-            vector<Mat> rvecs;
-            vector<Mat> tvecs;
-
-            Size imageSize = frameR.size();
-
-            calibrateCamera(object_points, image_points, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs);
-
-            FileStorage fs;
-            fs.open("D:\\1.txt", FileStorage::WRITE | FileStorage::READ);
-            fs << "cameraMatrix" << cameraMatrix;
-            fs << "distCoeffs" << distCoeffs;
-            fs << "rvecs" << rvecs;
-            fs << "tvecs" << tvecs;
-
-
-
-            cout << "Callibration ended." << endl;
-        }
-    }
-    captR.release();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /*
-
-    int key = waitKey(30);
-    Mat in_frame;
-    Mat gray;
-
-    vector<vector<Point3f> > object_points;     //вектора для калибровки
-    vector<vector<Point2f> > image_points;
-
-
-    Size patternsize(9,6);                          //размеры поля
-    vector<Point3f> obj;
-    for (int i=0; i<patternsize.height; i++)
-    {
-        for (int j=0; j<patternsize.width; j++)
-        {
-            obj.push_back(Point3f(i, j, 0.0f));
         }
     }
 
+    //////////// BEGIN CALIBRATION ////////////////////////
+    cout << "Callibration started..." << endl;
 
-    VideoCapture inVid(0);
-    if (!inVid.isOpened())
-    {
-        cout << "Камера не готова";
-        return;
-    }
+    Mat cameraMatrix = Mat(3, 3, CV_64F);
+    cameraMatrix.at<double>(0,0) = 1.0;
+    Mat distCoeffs;
+    distCoeffs = Mat::zeros(8, 1, CV_64F);
 
-    namedWindow("image");
-    while (inVid.read(in_frame))
-    {
+    vector<Mat> rvecs;
+    vector<Mat> tvecs;
 
+    Size imageSize = image.size();
 
-        vector<Point2f> pointBuf;
+    calibrateCamera(object_points, image_points, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs);
 
+    FileStorage fs;
+    fs.open("D:\\1.txt", FileStorage::WRITE | FileStorage::READ);
+    fs << "cameraMatrix" << cameraMatrix;
+    fs << "distCoeffs" << distCoeffs;
+    fs << "rvecs" << rvecs;
+    fs << "tvecs" << tvecs;
 
-        cvtColor(in_frame, in_frame, COLOR_BGR2GRAY);
-        bool patternfound = findChessboardCorners( in_frame, patternsize, pointBuf);
-                                                   //,CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_FAST_CHECK | CALIB_CB_NORMALIZE_IMAGE);
+    Mat undistorted;
+    undistort(image, undistorted, cameraMatrix, distCoeffs);
 
-        if(patternfound)
-        {
-            cornerSubPix(gray, pointBuf, Size(11, 11), Size(-1, -1),
-                         TermCriteria(TermCriteria::MAX_ITER + cv::TermCriteria::EPS, 30, 0.1));
-            drawChessboardCorners(in_frame, patternsize, pointBuf, patternfound);
+    Mat newCamMatrix;
+    initUndistortRectifyMap(cameraMatrix, distCoeffs, cv::Mat(), newCamMatrix, cv::Size(image.cols, image.rows), CV_32FC1, map1, map2);
 
-            if(key==32){  // Save good found by pressing [space]
-                image_points.push_back(corners);
-                object_points.push_back(obj);
-                cout << "Captured good calibration image, No " << a << endl;
-                cout << "corners: " << corners << endl;
-                //cout << "obj: " << obj << endl;
-                a++;
-            }
-        }
-    }
-
-    imshow("image", in_frame);
-
-    if (waitKey (1000/30) >= 0)
-    {
-        break;
-    }
-}
-    */
+    cout << "Callibration ended." << endl;
 }
 
 void MainWindow::PrintValues(const double area, const int Y, const int X, const double angle)
