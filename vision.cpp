@@ -11,7 +11,7 @@ void Move2(int angle);
 static QSerialPort serial;
 void SetPort()
 {    
-    serial.setPortName("com4");
+    serial.setPortName("com6");
     serial.setBaudRate(9600);
     serial.setDataBits(QSerialPort::Data8);
     serial.setParity(QSerialPort::NoParity);
@@ -40,20 +40,19 @@ void MainWindow::Video()
     namedWindow("image");
     while (inVid.read(in_frame))
     {
-        //        int cc = 25;
-        //        for(int i = cc; i < 640; i+= cc)
-        //        {
-        //          line(in_frame, Point(i,0), Point(i,480), cv::Scalar(255, 0, 0), 1);
-        //        }
+//                int cc = 40;
+//                for(int i = cc; i < 640; i+= cc)
+//                {
+//                  line(in_frame, Point(i,0), Point(i,480), cv::Scalar(255, 0, 0), 1);
+//                }
 
-        //        for(int i = cc; i < 480; i+= cc)
-        //        {
-        //          line(in_frame, Point(0,i), Point(640,i), cv::Scalar(255, 0, 0), 1);
-        //        }
+//                for(int i = cc; i < 480; i+= cc)
+//                {
+//                  line(in_frame, Point(0,i), Point(640,i), cv::Scalar(255, 0, 0), 1);
+//                }
 
-        /*
         cv::rotate(in_frame,in_frame, cv::ROTATE_180);
-        inRange(in_frame, Scalar(25, 30, 0), Scalar(80, 255, 55), in_frame2);              //B,G,R достаём нужный цвет
+        inRange(in_frame, Scalar(70, 110, 40), Scalar(130, 255, 80), in_frame2);              //B,G,R достаём нужный цвет
         findContours( in_frame2, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));    //находит контур
 
         Mat tmp = Mat::zeros(in_frame2.size(), CV_8UC3 );                                   //копирование изображения
@@ -70,15 +69,15 @@ void MainWindow::Video()
         for(unsigned int i = 0; i < contours.size(); i++ )
         {
             int area = contourArea(contours[i]);
-            if (area > 1200 && area <2500)
+            if (area > 400 && area <1000)
             {
                 contoursNew.push_back(contours[i]);               //заполняем вектор подходящими контурами
             }
             ui->size->setText(QString::number(contoursNew.size()));
         }
 
-        if(!contoursNew.size())
-        {Move2(0,0);}
+        // if(!contoursNew.size())
+        // {Move2(0,0);}
 
         for(unsigned int i = 0; i < contoursNew.size(); i++ )
         {
@@ -89,64 +88,43 @@ void MainWindow::Video()
             int y = boundRect[i].height/2 + boundRect[i].y;         //получаем координ центра по y
 
             //int deltaY = in_frame.rows - y - 120;
-            int deltaX = in_frame.cols/2 - centre -113 ;
-            int deltaY = in_frame.rows - y -145;
+            int deltaX = in_frame.cols/2 - centre - 0;
+            int deltaY =  y - 210;                          //значение длины (260 - значение что б получить 0 робота)
 
-            double angle = (double)deltaX/(deltaY + 200);   // ... + коррекция длины
-            angle = atan(angle) * 180.0 / PI;              //находим угол поворота
+            double angle = (double)deltaX/(deltaY + 260); //260      // ... + коррекция длины к основанию робота
+            angle = atan(angle) * (-180.0 / PI);                //находим угол поворота
 
-            int hypotenuse = (deltaX*deltaX)+ (deltaY*deltaY);          //зачем???
-            hypotenuse = sqrt(hypotenuse);
-
-            PrintValues(contourArea(contoursNew[i]), deltaX, deltaY, angle);       //вывод значений на форму
-
+            //double test = sin(angle * PI/ 180)*(260+210+deltaY) -210;
+            double test =(abs(deltaX) / sin(abs(angle) * PI/180)) - 300;
+            PrintValues(contourArea(contoursNew[i]), deltaX, deltaY, angle, test);       //вывод значений на форму
 
             Point center(centre, y);                                //присваевоем координаты точке center
-            circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);      //выводим центер
-            rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 );
+            circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);                                //выводим центер
+            rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 ); //выводим круг
 
-            if (deltaY > 15 && deltaY < 180)
+            // if (deltaY > 15 && deltaY < 180)
+            // {
+            if(ui->startWork->isChecked())
             {
-                if(ui->startWork->isChecked())
-                {
-                    Move2(deltaY,angle);
-                }
+                Move2(50,-10);
             }
+            // }
         }
 
         in_frame = in_frame + tmp;  //добавление квадратов к изображению
-        */
 
 
-        Mat image2;
-        remap(in_frame, image2, map1, map2, cv::INTER_CUBIC);
 
+        // Mat image2;                                               //калибровка
+        // remap(in_frame, image2, map1, map2, cv::INTER_CUBIC);     //
+        // imshow("New", image2);                                   //
         imshow("image", in_frame);
-        imshow("New", image2);
-        // imshow("win2", in_frame2);
+
+        imshow("win2", in_frame2);
         if (waitKey (1000/30) >= 0)
         {
             break;
         }
-
-    }
-}
-
-void MainWindow::CalibCamera2()
-{
-    Mat image;
-    namedWindow("image", WINDOW_AUTOSIZE);
-
-    for(int i = 0; i < 9; i++)
-    {
-        string path = "D:\\1111\\marker_";
-        path += to_string(i);
-        path += ".jpg";
-        image = imread(path);
-
-
-        imshow("image", image);
-        waitKey();
     }
 }
 
@@ -232,21 +210,14 @@ void MainWindow::CalibCamera()
     cout << "Callibration ended." << endl;
 }
 
-void MainWindow::PrintValues(const double area, const int Y, const int X, const double angle)
+void MainWindow::PrintValues(const double area, const int Y, const int X, const double angle, const double test)
 {
     ui->PrintArea->setText(QString::number(area));
     ui->PrintX->setText(QString::number(Y));
     ui->PrintY->setText(QString::number(X));
     ui->PrintAngle->setText(QString::number(angle));
-}
+    ui->PrintAngle_2->setText(QString::number(test));
 
-void Move2(int angle)
-{
-
-    QByteArray hypBuffer = QByteArray::number(angle);
-    hypBuffer += "\n";
-    serial.write(hypBuffer);
-    cout << angle <<endl;
 }
 
 void Move2(int hypotenuse, int angle)

@@ -121,6 +121,19 @@
      <string>RadioButton</string>
     </property>
    </widget>
+   <widget class="QLabel" name="PrintAngle_2">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>140</y>
+      <width>76</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>PrintAngle</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
