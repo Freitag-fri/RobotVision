@@ -6,7 +6,6 @@ using namespace std;
 #define PI 3.14159265     // число ПИ
 
 void Move2(int param, int angle);
-void Move2(int angle);
 
 static QSerialPort serial;
 void SetPort()
@@ -43,7 +42,7 @@ void MainWindow::Video()
 //                int cc = 40;
 //                for(int i = cc; i < 640; i+= cc)
 //                {
-//                  line(in_frame, Point(i,0), Point(i,480), cv::Scalar(255, 0, 0), 1);
+//                  line(in_frame, Point(320,0), Point(320,480), cv::Scalar(255, 0, 0), 1);
 //                }
 
 //                for(int i = cc; i < 480; i+= cc)
@@ -52,7 +51,7 @@ void MainWindow::Video()
 //                }
 
         cv::rotate(in_frame,in_frame, cv::ROTATE_180);
-        inRange(in_frame, Scalar(70, 110, 40), Scalar(130, 255, 80), in_frame2);              //B,G,R достаём нужный цвет
+        inRange(in_frame, Scalar(70, 100, 40), Scalar(150, 255, 95), in_frame2);              //B,G,R достаём нужный цвет
         findContours( in_frame2, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));    //находит контур
 
         Mat tmp = Mat::zeros(in_frame2.size(), CV_8UC3 );                                   //копирование изображения
@@ -69,15 +68,12 @@ void MainWindow::Video()
         for(unsigned int i = 0; i < contours.size(); i++ )
         {
             int area = contourArea(contours[i]);
-            if (area > 400 && area <1000)
+            if (area > 400 && area <1500)
             {
                 contoursNew.push_back(contours[i]);               //заполняем вектор подходящими контурами
             }
             ui->size->setText(QString::number(contoursNew.size()));
         }
-
-        // if(!contoursNew.size())
-        // {Move2(0,0);}
 
         for(unsigned int i = 0; i < contoursNew.size(); i++ )
         {
@@ -87,16 +83,18 @@ void MainWindow::Video()
             int centre = boundRect[i].width/2 + boundRect[i].x;     //получаем координ центра по x
             int y = boundRect[i].height/2 + boundRect[i].y;         //получаем координ центра по y
 
-            //int deltaY = in_frame.rows - y - 120;
-            int deltaX = in_frame.cols/2 - centre - 0;
-            int deltaY =  y - 210;                          //значение длины (260 - значение что б получить 0 робота)
+            int deltaX = in_frame.cols/2 - centre - 8;
+            int deltaY =  y - 130;                          //значение длины (260 - значение что б получить 0 робота)
 
             double angle = (double)deltaX/(deltaY + 260); //260      // ... + коррекция длины к основанию робота
             angle = atan(angle) * (-180.0 / PI);                //находим угол поворота
 
-            //double test = sin(angle * PI/ 180)*(260+210+deltaY) -210;
-            double test =(abs(deltaX) / sin(abs(angle) * PI/180)) - 300;
-            PrintValues(contourArea(contoursNew[i]), deltaX, deltaY, angle, test);       //вывод значений на форму
+
+            //if(angle == 0) angle = 0.01;
+            //if(deltaX == 0) deltaX = 1;
+            double line =(abs(deltaX) / sin(abs(angle) * PI/180)) - 260;    //считаем необходимое перемещение
+            line /= 1.3;                //коэф для перевода пиксилей в угловые знач робота
+            PrintValues(contourArea(contoursNew[i]), deltaX, deltaY, angle, line);       //вывод значений на форму
 
             Point center(centre, y);                                //присваевоем координаты точке center
             circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);                                //выводим центер
@@ -106,7 +104,7 @@ void MainWindow::Video()
             // {
             if(ui->startWork->isChecked())
             {
-                Move2(50,-10);
+                Move2(line, angle);
             }
             // }
         }
@@ -220,12 +218,12 @@ void MainWindow::PrintValues(const double area, const int Y, const int X, const 
 
 }
 
-void Move2(int hypotenuse, int angle)
+void Move2(int line, int angle)
 {
     char messenger[13];
 
-    QByteArray hypBuffer = QByteArray::number(hypotenuse);
-    sprintf(messenger, "a%03db%03dc%03d", angle, hypotenuse, hypotenuse +angle);   //кодировка координат a030b102c132
+    QByteArray hypBuffer = QByteArray::number(line);
+    sprintf(messenger, "a%03db%03dc%03d", angle, line, line +angle);   //кодировка координат a030b102c132
 
     serial.write(messenger);
     cout << messenger <<endl;
