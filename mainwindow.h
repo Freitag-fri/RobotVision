@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <iostream>
 #include <cmath>
+#include <map>
+
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
@@ -31,6 +33,7 @@ private slots:
     void PrintValues(const double area, const int Y, const int X, const double angle, const double test);
     void Video();
     void CalibCamera();             //калибровка камеры
+    std::pair<int, int> Coordinates(cv::Rect &boundRect, cv::Mat &frame, cv::Mat &tmp);
     void on_pushButton_clicked();
 
 private:

@@ -5,7 +5,7 @@ using namespace cv;
 using namespace std;
 #define PI 3.14159265     // число ПИ
 
-void Move2(int param, int angle);
+void Move(pair<int, int> coordinates);
 
 static QSerialPort serial;
 void SetPort()
@@ -22,7 +22,6 @@ void SetPort()
 void MainWindow::Video()
 {
     vector<vector<Point>> contours;        //переменные для определение квадрата
-
     Mat in_frame;
     Mat in_frame2;
     int right = 0;
@@ -50,13 +49,14 @@ void MainWindow::Video()
 //                  line(in_frame, Point(0,i), Point(640,i), cv::Scalar(255, 0, 0), 1);
 //                }
 
+        std::multimap<int, int> arrayCoordinates;               //координаты хранятся здесь
         cv::rotate(in_frame,in_frame, cv::ROTATE_180);
-        inRange(in_frame, Scalar(70, 100, 40), Scalar(150, 255, 95), in_frame2);              //B,G,R достаём нужный цвет
+        inRange(in_frame, Scalar(70, 110, 40), Scalar(145, 255, 105), in_frame2);              //B,G,R достаём нужный цвет
         findContours( in_frame2, contours, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0));    //находит контур
 
         Mat tmp = Mat::zeros(in_frame2.size(), CV_8UC3 );                                   //копирование изображения
         std::vector<std::vector<cv::Point> > contours_poly( contours.size() );
-        std::vector<cv::Rect> boundRect(contours.size() );
+        std::vector<cv::Rect> boundRect(contours.size());
 
         if (right <= 0 || left <= 0)
         {
@@ -80,37 +80,19 @@ void MainWindow::Video()
             cv::approxPolyDP( cv::Mat(contoursNew[i]), contours_poly[i], 7, true );
             boundRect[i] = cv::boundingRect( cv::Mat(contours_poly[i]) );
 
-            int centre = boundRect[i].width/2 + boundRect[i].x;     //получаем координ центра по x
-            int y = boundRect[i].height/2 + boundRect[i].y;         //получаем координ центра по y
 
-            int deltaX = in_frame.cols/2 - centre - 8;
-            int deltaY =  y - 130;                          //значение длины (260 - значение что б получить 0 робота)
+            //PrintValues(contourArea(contoursNew[i]), deltaX, deltaY, angle, line);       //вывод значений на форму
 
-            double angle = (double)deltaX/(deltaY + 260); //260      // ... + коррекция длины к основанию робота
-            angle = atan(angle) * (-180.0 / PI);                //находим угол поворота
+            arrayCoordinates.insert(Coordinates(boundRect[i], in_frame, tmp));
 
-
-            //if(angle == 0) angle = 0.01;
-            //if(deltaX == 0) deltaX = 1;
-            double line =(abs(deltaX) / sin(abs(angle) * PI/180)) - 260;    //считаем необходимое перемещение
-            line /= 1.3;                //коэф для перевода пиксилей в угловые знач робота
-            PrintValues(contourArea(contoursNew[i]), deltaX, deltaY, angle, line);       //вывод значений на форму
-
-            Point center(centre, y);                                //присваевоем координаты точке center
-            circle(in_frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);                                //выводим центер
-            rectangle( tmp, boundRect[i].tl(), boundRect[i].br(), cv::Scalar(0, 0, 255), 2, 8, 0 ); //выводим круг
-
-            // if (deltaY > 15 && deltaY < 180)
-            // {
-            if(ui->startWork->isChecked())
-            {
-                Move2(line, angle);
-            }
-            // }
+        }
+        if(ui->startWork->isChecked())
+        {
+            std::pair<int,int> buff(arrayCoordinates.begin()->first, arrayCoordinates.begin()->second);
+            Move(buff);        //отправка координат роботу
         }
 
         in_frame = in_frame + tmp;  //добавление квадратов к изображению
-
 
 
         // Mat image2;                                               //калибровка
@@ -208,6 +190,30 @@ void MainWindow::CalibCamera()
     cout << "Callibration ended." << endl;
 }
 
+std::pair<int, int> MainWindow::Coordinates(cv::Rect &boundRect, cv::Mat &frame, cv::Mat &tmp)
+{
+    int centre = boundRect.width/2 + boundRect.x;     //получаем координ центра по x
+    int y = boundRect.height/2 + boundRect.y;         //получаем координ центра по y
+
+    int deltaX = frame.cols/2 - centre - 8;         // 8 отклонение от центра камеры
+    int deltaY =  y - 130;                          //значение длины (260 - значение что б получить 0 робота)
+
+    double angle = (double)deltaX/(deltaY + 260); //260 min радиус робота
+    angle = atan(angle) * (-180.0 / PI);                //находим угол поворота
+
+    double line =(abs(deltaX) / sin(abs(angle) * PI/180)) - 260;    //считаем необходимое перемещение
+    line /= 1.3;
+
+    Point center(centre, y);                                //присваевоем координаты точке center
+    circle(frame, center, 5, Scalar(0, 0, 255), 3, 8, 0);                                //выводим центер
+    rectangle( tmp, boundRect.tl(), boundRect.br(), cv::Scalar(0, 0, 255), 2, 8, 0 ); //выводим круг
+
+    if(line > 0)
+    {
+        return std::pair<int, int> (line, angle);
+    }
+}
+
 void MainWindow::PrintValues(const double area, const int Y, const int X, const double angle, const double test)
 {
     ui->PrintArea->setText(QString::number(area));
@@ -218,9 +224,11 @@ void MainWindow::PrintValues(const double area, const int Y, const int X, const 
 
 }
 
-void Move2(int line, int angle)
+void Move(pair<int, int> Coordinates)
 {
     char messenger[13];
+    int line = Coordinates.first;
+    int angle = Coordinates.second;
 
     QByteArray hypBuffer = QByteArray::number(line);
     sprintf(messenger, "a%03db%03dc%03d", angle, line, line +angle);   //кодировка координат a030b102c132
