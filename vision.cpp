@@ -36,6 +36,7 @@ void MainWindow::Video()
     cv::namedWindow("image");
     while (inVid.read(in_frame))
     {
+
         //        int cc = 50;            //33
         //        for(int i = cc; i < 640; i+= cc)
         //        {
@@ -47,7 +48,7 @@ void MainWindow::Video()
         //            line(in_frame, cv::Point(0,i), cv::Point(640,i), cv::Scalar(255, 0, 0), 1);
         //        }
 
-        /*
+
         arrayCoordinates.clear();
         cv::rotate(in_frame,in_frame, cv::ROTATE_180);
         inRange(in_frame, cv::Scalar(50, 50, 150), cv::Scalar(80, 80, 255), in_frame2);              //B,G,R достаём нужный цвет
@@ -101,7 +102,7 @@ void MainWindow::Video()
         imshow("image", in_frame);
 
         imshow("win2", in_frame2);
-        */
+
         if (cv::waitKey (1000/30) >= 0)
         {
             break;
@@ -253,27 +254,43 @@ void MainWindow::Move(pair<int, int> Coordinates)
 {
     if(ui->startWork->isChecked())
     {
-        char messenger[13];
-        int line = Coordinates.first;
-        int angle = Coordinates.second;
+        if(!serial.atEnd())
+        {
+            QByteArray hypBuffer = serial.readAll();
+            //hypBuffer.size();
+            QString temp = QString::fromStdString(hypBuffer.toStdString());
+            qDebug() << hypBuffer;
+            if(temp == "v100")
+            {
+               qDebug() << "true";
 
-        //QByteArray hypBuffer = QByteArray::number(line);
-        sprintf(messenger, "a%03db%03dc%03d", angle, line, line +angle);   //кодировка координат a030b102c132
+               char messenger[13];
+               int line = Coordinates.first;
+               int angle = Coordinates.second;
 
-        serial.write(messenger);
-        cout << messenger <<endl;
+               sprintf(messenger, "a%03db%03dc%03d", angle, line, line +angle);   //кодировка координат a030b102c132
+
+               serial.write(messenger);
+               cout << messenger <<endl;
+            }
+            else
+            {
+              qDebug() << "false";
+            }
+        }
+
     }
 }
 
 void MainWindow::on_Start_Work_clicked()
 {
-    //        if(!serial.atEnd())
-    //        {
-    //            QByteArray hypBuffer = serial.readAll();
-    //            //hypBuffer.size();
-    //            QString temp = QString::fromStdString(hypBuffer.toStdString());
-    //            qDebug() << hypBuffer;
-    //        }
+//            if(!serial.atEnd())
+//            {
+//                QByteArray hypBuffer = serial.readAll();
+//                //hypBuffer.size();
+//                QString temp = QString::fromStdString(hypBuffer.toStdString());
+//                qDebug() << hypBuffer;
+//            }
     if(ui->Start_Work->isChecked())
     {
         char messenger[5] = {"s111"};
