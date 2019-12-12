@@ -7,7 +7,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-   // CalibCamera();
+    //CalibCamera();
 }
 
 MainWindow::~MainWindow()
@@ -19,5 +19,8 @@ void MainWindow::on_pushButton_clicked()
 {
     SetPort();
     Video();
+    //testCom();
 
 }
+
+
