@@ -39,6 +39,8 @@ private slots:
 
     void on_Start_Work_clicked();
 
+    void on_Reset_pos_clicked();
+
 private:
     Ui::MainWindow *ui;
 

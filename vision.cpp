@@ -37,21 +37,21 @@ void MainWindow::Video()
     while (inVid.read(in_frame))
     {
 
-        //        int cc = 50;            //33
-        //        for(int i = cc; i < 640; i+= cc)
-        //        {
-        //            line(in_frame, cv::Point(i,0), cv::Point(i,480), cv::Scalar(255, 0, 0), 1);
-        //        }
+//                int cc = 25;            //33
+//                for(int i = cc; i < 640; i+= cc)
+//                {
+//                    line(in_frame, cv::Point(i,0), cv::Point(i,480), cv::Scalar(255, 0, 0), 1);
+//                }
 
-        //        for(int i = cc; i < 480; i+= cc)
-        //        {
-        //            line(in_frame, cv::Point(0,i), cv::Point(640,i), cv::Scalar(255, 0, 0), 1);
-        //        }
+//                for(int i = cc; i < 480; i+= cc)
+//                {
+//                    line(in_frame, cv::Point(0,i), cv::Point(640,i), cv::Scalar(255, 0, 0), 1);
+//                }
 
 
         arrayCoordinates.clear();
         cv::rotate(in_frame,in_frame, cv::ROTATE_180);
-        inRange(in_frame, cv::Scalar(50, 50, 150), cv::Scalar(80, 80, 255), in_frame2);              //B,G,R достаём нужный цвет
+        inRange(in_frame, cv::Scalar(50, 50, 120), cv::Scalar(90, 90, 255), in_frame2);              //B,G,R достаём нужный цвет
         findContours( in_frame2, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));    //находит контур
 
         cv::Mat tmp = cv::Mat::zeros(in_frame2.size(), CV_8UC3 );                                   //копирование изображения
@@ -212,22 +212,20 @@ std::pair<int, int> MainWindow::Coordinates(cv::Rect &boundRect, cv::Mat &frame,
     int centre = boundRect.width/2 + boundRect.x;     //получаем координ центра по x
     int y = boundRect.height/2 + boundRect.y;         //получаем координ центра по y
 
-    int deltaX = frame.cols/2 - centre + 10;         // 8 отклонение от центра камеры
-    int deltaY =  y -212;                          //значение длины (260 - значение что б получить 0 робота)
+    int deltaX = frame.cols/2 - centre + 20;         // 8 отклонение от центра камеры
+    int deltaY =  y -240;                          //значение длины (260 - значение что б получить 0 робота)
 
     double angle = (double)deltaX/(deltaY + 260); //260 min радиус робота
     angle = atan(angle) * (-180.0 / PI);                //находим угол поворота
 
     double line =(abs(deltaX) / sin(abs(angle) * PI/180)) - 260;    //считаем необходимое перемещение
-    line /= 1.6;
+    line /= 1.55;
 
     cv::Point center(centre, y);                                //присваевоем координаты точке center
     circle(frame, center, 5, cv::Scalar(0, 0, 255), 3, 8, 0);                                //выводим центер
     rectangle( tmp, boundRect.tl(), boundRect.br(), cv::Scalar(0, 0, 255), 2, 8, 0 ); //выводим круг
 
     PrintValues(0, deltaX, deltaY, angle, line);
-
-
 
     return std::pair<int, int> (line, angle);
 }
@@ -303,5 +301,12 @@ void MainWindow::on_Start_Work_clicked()
         serial.write(messenger);
         qDebug() << "false";
     }
+}
+
+void MainWindow::on_Reset_pos_clicked()
+{
+    char messenger[5] = {"s200"};
+    serial.write(messenger);
+    qDebug() << "Reset_pos";
 }
 
