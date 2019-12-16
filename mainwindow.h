@@ -32,6 +32,7 @@ private slots:
     void PrintValues(const double area, const int Y, const int X, const double angle, const double test);
     void PrintValues(std::pair<int, int> Coordinates);
     void Video();
+    void CalibBright(cv::Mat &frame);
     void CalibCamera();             //калибровка камеры
     std::pair<int, int> Coordinates(cv::Rect &boundRect, cv::Mat &frame, cv::Mat &tmp);
     void on_pushButton_clicked();
@@ -46,6 +47,10 @@ private:
 
     cv::Mat map1;       //коэф для калибровки каммеры
     cv::Mat map2;       //коэф для калибровки каммеры
+
+    double koefR;
+    double koefG;
+    double koefB;
 };
 
 #endif // MAINWINDOW_H

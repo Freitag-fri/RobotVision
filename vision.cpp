@@ -36,22 +36,26 @@ void MainWindow::Video()
     cv::namedWindow("image");
     while (inVid.read(in_frame))
     {
+        //                int cc = 25;            //33
+        //                for(int i = cc; i < 640; i+= cc)
+        //                {
+        //                    line(in_frame, cv::Point(i,0), cv::Point(i,480), cv::Scalar(255, 0, 0), 1);
+        //                }
 
-//                int cc = 25;            //33
-//                for(int i = cc; i < 640; i+= cc)
-//                {
-//                    line(in_frame, cv::Point(i,0), cv::Point(i,480), cv::Scalar(255, 0, 0), 1);
-//                }
-
-//                for(int i = cc; i < 480; i+= cc)
-//                {
-//                    line(in_frame, cv::Point(0,i), cv::Point(640,i), cv::Scalar(255, 0, 0), 1);
-//                }
+        //                for(int i = cc; i < 480; i+= cc)
+        //                {
+        //                    line(in_frame, cv::Point(0,i), cv::Point(640,i), cv::Scalar(255, 0, 0), 1);
+        //                }
 
 
         arrayCoordinates.clear();
-        cv::rotate(in_frame,in_frame, cv::ROTATE_180);
-        inRange(in_frame, cv::Scalar(50, 50, 120), cv::Scalar(90, 90, 255), in_frame2);              //B,G,R достаём нужный цвет
+        cv::rotate(in_frame,in_frame, cv::ROTATE_180);          //переворот камеры на 180 градусов
+
+
+        CalibBright(in_frame);
+
+
+        inRange(in_frame, cv::Scalar(32*koefB, 40*koefG, 143*koefR), cv::Scalar(68*koefB, 78*koefG, 189*koefR), in_frame2);              //B,G,R достаём нужный цвет
         findContours( in_frame2, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));    //находит контур
 
         cv::Mat tmp = cv::Mat::zeros(in_frame2.size(), CV_8UC3 );                                   //копирование изображения
@@ -75,7 +79,7 @@ void MainWindow::Video()
             boundRect[i] = cv::boundingRect( cv::Mat(contours_poly[i]) );
 
             std::pair<int,int> buf = Coordinates(boundRect[i], in_frame, tmp);
-            if(buf.first > 0)
+            if(buf.first > 10)
             {
                 //PrintValues(contourArea(contoursNew[i]), deltaX, deltaY, angle, line);       //вывод значений на форму
                 arrayCoordinates.insert(buf);
@@ -94,6 +98,8 @@ void MainWindow::Video()
             ui->textEdit->insertPlainText("line = " + QString::number(i.first) + ", andle =  " + QString::number(i.second) + '\n');
         }
 
+
+
         in_frame = in_frame + tmp;  //добавление квадратов к изображению
 
         // Mat image2;                                               //калибровка
@@ -108,6 +114,68 @@ void MainWindow::Video()
             break;
         }
     }
+}
+
+void MainWindow::CalibBright(cv::Mat &frame)
+{
+
+//    for(int x = 130; x < 180; x++)
+//    {
+//        for(int y = 40; y < 90; y++)
+//        {
+//           frame.at<cv::Vec3b>(cv::Point(x,y)) = cv::Vec3b(255, 255, 255);      //перекрашиваем
+//        }
+//    }
+
+
+    const int rM = 140;         //значения каналов макета
+    const int gM = 48;          //
+    const int bM = 44;          //
+
+    int R = 0;
+    int G = 0;
+    int B = 0;
+    int i = 0;
+
+    for(int x = 130; x < 180; x++)
+    {
+        for(int y = 40; y < 90; y++)
+        {
+            cv::Vec3b pValVec = frame.at<cv::Vec3b>(cv::Point(x, y));
+
+            B += pValVec[0];
+            G += pValVec[1];
+            R += pValVec[2];
+            i++;
+        }
+    }
+    B /= i;
+    G /= i;
+    R /= i;
+
+    if(R > G && R > B)
+    {
+        koefR = (double)R/rM;
+        koefG = (double)G/gM;
+        koefB = (double)B/bM;
+    }
+    else
+    {
+      koefR = 1;
+      koefG = 1;
+      koefB = 1;
+    }
+
+
+
+//    ui->Bb->setText(QString::number(koefB));
+//    ui->Gg->setText(QString::number(koefG));
+//    ui->Rr->setText(QString::number(koefR));
+    ui->Bb->setText(QString::number(B));
+    ui->Gg->setText(QString::number(G));
+    ui->Rr->setText(QString::number(R));
+
+
 }
 
 void MainWindow::CalibCamera()
@@ -212,20 +280,27 @@ std::pair<int, int> MainWindow::Coordinates(cv::Rect &boundRect, cv::Mat &frame,
     int centre = boundRect.width/2 + boundRect.x;     //получаем координ центра по x
     int y = boundRect.height/2 + boundRect.y;         //получаем координ центра по y
 
-    int deltaX = frame.cols/2 - centre + 20;         // 8 отклонение от центра камеры
-    int deltaY =  y -240;                          //значение длины (260 - значение что б получить 0 робота)
+    int deltaX = frame.cols/2 - centre + 15;         // 8 отклонение от центра камеры
+    int deltaY =  y -238;                          //значение длины (260 - значение что б получить 0 робота)
 
     double angle = (double)deltaX/(deltaY + 260); //260 min радиус робота
     angle = atan(angle) * (-180.0 / PI);                //находим угол поворота
 
     double line =(abs(deltaX) / sin(abs(angle) * PI/180)) - 260;    //считаем необходимое перемещение
-    line /= 1.55;
+    line /= 1.32;
+
+    angle /= 1.15;                  //костыли
+    if (angle < -30) line -=20;     //
 
     cv::Point center(centre, y);                                //присваевоем координаты точке center
     circle(frame, center, 5, cv::Scalar(0, 0, 255), 3, 8, 0);                                //выводим центер
     rectangle( tmp, boundRect.tl(), boundRect.br(), cv::Scalar(0, 0, 255), 2, 8, 0 ); //выводим круг
 
     PrintValues(0, deltaX, deltaY, angle, line);
+
+    cv::Point center2(frame.cols/2 + 15, -240);
+    circle(frame, center2, 260 + 238, cv::Scalar(0, 255, 255), 2, 8, 0);
+    circle(frame, center2, 260 + 238 +185 * 1.32, cv::Scalar(0, 255, 255), 2, 8, 0);
 
     return std::pair<int, int> (line, angle);
 }
@@ -260,20 +335,20 @@ void MainWindow::Move(pair<int, int> Coordinates)
             qDebug() << hypBuffer;
             if(temp == "v100")
             {
-               qDebug() << "true";
+                qDebug() << "true";
 
-               char messenger[13];
-               int line = Coordinates.first;
-               int angle = Coordinates.second;
+                char messenger[13];
+                int line = Coordinates.first;
+                int angle = Coordinates.second;
 
-               sprintf(messenger, "a%03db%03dc%03d", angle, line, line +angle);   //кодировка координат a030b102c132
+                sprintf(messenger, "a%03db%03dc%03d", angle, line, line +angle);   //кодировка координат a030b102c132
 
-               serial.write(messenger);
-               cout << messenger <<endl;
+                serial.write(messenger);
+                cout << messenger <<endl;
             }
             else
             {
-              qDebug() << "false";
+                qDebug() << "false";
             }
         }
 
@@ -282,13 +357,13 @@ void MainWindow::Move(pair<int, int> Coordinates)
 
 void MainWindow::on_Start_Work_clicked()
 {
-//            if(!serial.atEnd())
-//            {
-//                QByteArray hypBuffer = serial.readAll();
-//                //hypBuffer.size();
-//                QString temp = QString::fromStdString(hypBuffer.toStdString());
-//                qDebug() << hypBuffer;
-//            }
+    //            if(!serial.atEnd())
+    //            {
+    //                QByteArray hypBuffer = serial.readAll();
+    //                //hypBuffer.size();
+    //                QString temp = QString::fromStdString(hypBuffer.toStdString());
+    //                qDebug() << hypBuffer;
+    //            }
     if(ui->Start_Work->isChecked())
     {
         char messenger[5] = {"s111"};
